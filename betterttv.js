@@ -1,5 +1,5 @@
 /** @license
- * Copyright (c) 2015 NightDev
+ * Copyright (c) 2016 NightDev, LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1111,7 +1111,7 @@ exports.tabCompletion = function(e) {
 
             // Mix in emotes if not directly asking for a user
             if (lastWord.charAt(0) !== '@' && !detectServerCommand(input)) {
-                users = users.concat(emotes);
+                users = bttv.settings.get('tabCompletionEmotePriority') ? emotes.concat(users) : users.concat(emotes);
             }
 
             if (users.indexOf(vars.userData.name) > -1) users.splice(users.indexOf(vars.userData.name), 1);
@@ -1152,7 +1152,7 @@ exports.tabCompletion = function(e) {
             isEmote = false;
         }
 
-        if (/^(\/|\.)/.test(lastWord)) {
+        if (/^(\/|\.)/.test(lastWord) && sentence.length === 0) {
             user = lastWord + ' ' + user;
             $chatInput.val(user);
             return;
@@ -2376,7 +2376,7 @@ var timestamp = exports.timestamp = function(time) {
 };
 
 var modicons = exports.modicons = function() {
-    return '<span class="mod-icons"><a class="mod-icon timeout" title="Timeout">Timeout</a><a class="mod-icon ban" title="Ban">Ban</a><a class="mod-icon unban" title="Unban" style="display: none;">Unban</a></span>';
+    return '<span class="mod-icons"><a class="mod-icon ban" title="Ban">Ban</a><a class="mod-icon unban" title="Unban" style="display: none;">Unban</a><a class="mod-icon timeout" title="Timeout">Timeout</a></span>';
 };
 
 var linkify = exports.linkify = function(message) {
@@ -3762,8 +3762,7 @@ var checkBroadcastInfo = module.exports = function() {
                     d.status = d.status.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     d.status = bttv.chat.templates.linkify(d.status);
 
-                    $title.find('.real').html(d.status);
-                    $title.find('.over').html(d.status);
+                    $title.html(d.status);
                 }
             }
         }
@@ -6145,6 +6144,24 @@ module.exports = [
         storageKey: 'disableWhispers'
     },
     {
+        name: 'Disable Frontpage Video Autplay',
+        description: 'Disable video autplay on the frontpage',
+        default: false,
+        storageKey: 'disableFPVideo',
+        load: function() {
+            if (window.location.href === 'https://www.twitch.tv/' && bttv.settings.get('disableFPVideo') === true) {
+                $(window).load(function() {
+                    var frameSrc = $('#video-1').children('iframe').eq(0).attr('src');
+                    $('#video-1').children('iframe').eq(0).attr('src', frameSrc + '&autoplay=false');
+                    $('#video-1').bind('DOMNodeInserted DOMNodeRemoved', function() {
+                        frameSrc = $('#video-1').children('iframe').eq(0).attr('src');
+                        $('#video-1').children('iframe').eq(0).attr('src', frameSrc + '&autoplay=false');
+                    });
+                });
+            }
+        }
+    },
+    {
         name: 'Double-Click Auto-Complete',
         description: 'Double-clicking a username in chat copies it into the chat text box',
         default: false,
@@ -6315,6 +6332,12 @@ module.exports = [
                 $('#splitChat').remove();
             }
         }
+    },
+    {
+        name: 'Tab Completion Emote Priority',
+        description: 'Prioritize emotes over usernames when using tab completion',
+        default: false,
+        storageKey: 'tabCompletionEmotePriority'
     },
     {
         name: 'Tab Completion Tooltip',
